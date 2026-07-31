@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { getIO } = require("../sockets/socket");
+const { performAIAnalysis } = require("./aiController");
 
 const createSOS = async (req, res) => {
     const {
@@ -44,7 +45,8 @@ const createSOS = async (req, res) => {
         mesh_message_id
     ]
 );
-
+const newSOS = result.rows[0];
+await performAIAnalysis(newSOS.id);
 const io = getIO();
 
 const sender = await pool.query(

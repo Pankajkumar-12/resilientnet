@@ -52,7 +52,7 @@ const calculatePriorityScore = (severity, category) => {
 
 };
 
-const recommendResource = async (category, sosId) => {
+const recommendResource = async (category, sosId)  => {
 
     let resourceCategory;
 

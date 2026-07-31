@@ -8,6 +8,8 @@ const { initializeSocket } = require("./sockets/socket");
 const cors = require("cors");
 const resourceRoutes = require("./routes/resourceRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const volunteerRoutes = require("./routes/volunteerRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 
 const app = express();
@@ -28,6 +30,12 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+
+app.use("/api/volunteers", volunteerRoutes);
+app.use("/api/analytics", analyticsRoutes);
+
+
+
 app.get("/", (req, res) => {
     res.send("Welcome to ResilientNet Backend API");
 });
