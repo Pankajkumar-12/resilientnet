@@ -63,7 +63,10 @@ body {
   box-sizing: border-box;
 }
 
-h1,
+h1{
+  font-weight: 700;
+  font-size: clamp(24px, 5vw,64px );
+}
 h2 {
   font-family: var(--heading);
   font-weight: 500;

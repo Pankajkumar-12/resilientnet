@@ -35,7 +35,7 @@ const Dashboard = () => {
                             color: "#222",
                             marginTop: "0px",
                             marginBottom: "30px",
-                            fontSize: "42px",
+                            
                             fontWeight: "700",
                         
                         }}

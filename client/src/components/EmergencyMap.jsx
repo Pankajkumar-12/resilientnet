@@ -4,6 +4,8 @@ import {
     Typography
 } from "@mui/material";
 
+import api from "../services/api";
+
 import {
     Box,
     Button,
@@ -87,7 +89,7 @@ const greenIcon = new L.Icon({
     popupAnchor: [1, -34]
 });
 
-function MapController({ alerts, onReady }) {
+function MapController({ alerts,incidents, onReady }) {
 
     const map = useMap();
 
@@ -97,38 +99,114 @@ function MapController({ alerts, onReady }) {
 
     }, [map, onReady]);
 
-    useEffect(() => {
+   useEffect(() => {
 
-        if (alerts.length === 0) return;
-
-        const validAlerts = alerts.filter(
+    const alertLocations = alerts
+        .filter(
             alert =>
                 alert.latitude != null &&
                 alert.longitude != null
-        );
+        )
+        .map(alert => [
+            Number(alert.latitude),
+            Number(alert.longitude)
+        ]);
 
-        if (validAlerts.length === 0) return;
+    const incidentLocations = incidents
+        .map(incident => {
+            if (!incident.location) return null;
 
-        const bounds = L.latLngBounds(
-            validAlerts.map(alert => [
-                Number(alert.latitude),
-                Number(alert.longitude)
-            ])
-        );
+            const match = incident.location.match(
+                /POINT\(([-\d.]+) ([-\d.]+)\)/
+            );
 
-        map.fitBounds(bounds, {
-            padding: [50, 50]
-        });
+            if (!match) return null;
 
-    }, [alerts, map]);
+            return [
+                Number(match[2]), // latitude
+                Number(match[1])  // longitude
+            ];
+        })
+        .filter(Boolean);
+
+    const allLocations = [
+        ...alertLocations,
+        ...incidentLocations
+    ];
+
+    if (allLocations.length === 0) return;
+
+    const bounds = L.latLngBounds(allLocations);
+
+    map.fitBounds(bounds, {
+        padding: [50, 50]
+    });
+
+}, [alerts, incidents, map]);
 
     return null;
 }
+const getIncidentPosition = (incident, index, allIncidents) => {
+    if (!incident.location) return null;
 
+    const match = incident.location.match(
+        /POINT\(([-\d.]+) ([-\d.]+)\)/
+    );
+
+    if (!match) return null;
+
+    const longitude = Number(match[1]);
+    const latitude = Number(match[2]);
+
+    // Find incidents having the same coordinates
+    const sameLocation = allIncidents.filter(
+        (item) => item.location === incident.location
+    );
+
+    if (sameLocation.length <= 1) {
+        return [latitude, longitude];
+    }
+
+    // Position within the group
+    const position = sameLocation.findIndex(
+        (item) => item.id === incident.id
+    );
+
+    // Small visual offset in degrees
+    const radius = 0.00035;
+
+    const angle = (2 * Math.PI * position) / sameLocation.length;
+
+    return [
+        latitude + Math.sin(angle) * radius,
+        longitude + Math.cos(angle) * radius
+    ];
+};
 
 const EmergencyMap = () => {
     const [map, setMap] = useState(null);
+    const [incidents, setIncidents] = useState([]);
+
     const { alerts } = useEmergency();
+
+  useEffect(() => {
+    fetchIncidents();
+
+    const interval = setInterval(() => {
+        fetchIncidents();
+    }, 10000);
+
+    return () => clearInterval(interval);
+}, []);
+
+    const fetchIncidents = async () => {
+        try {
+            const response = await api.get("/incidents");
+            setIncidents(response.data);
+        } catch (error) {
+            console.error("Failed to fetch incidents:", error);
+        }
+    };
     const mapRef = useRef(null);
     return (
         <Card
@@ -298,6 +376,7 @@ const EmergencyMap = () => {
                     />
 <MapController
     alerts={alerts}
+        incidents={incidents}
     onReady={setMap}
 />
 
@@ -368,7 +447,74 @@ const EmergencyMap = () => {
                         );
 
                     })}
+{incidents.map((incident) => {
+    const position = getIncidentPosition(
+        incident,
+        0,
+        incidents
+    );
 
+    if (!position) return null;
+
+    return (
+        <Marker
+            key={`incident-${incident.id}`}
+            position={position}
+            icon={
+                incident.severity === "HIGH"
+                    ? redIcon
+                    : incident.severity === "MEDIUM"
+                    ? orangeIcon
+                    : greenIcon
+            }
+        >
+            <Popup>
+                <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                >
+                    {incident.title}
+                </Typography>
+
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                    {incident.description}
+                </Typography>
+
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>Incident:</strong>{" "}
+                    {incident.incident_number}
+                </Typography>
+
+                <Typography variant="body2">
+                    <strong>Category:</strong>{" "}
+                    {incident.category}
+                </Typography>
+
+                <Typography variant="body2">
+                    <strong>Severity:</strong>{" "}
+                    {incident.severity}
+                </Typography>
+
+                <Typography variant="body2">
+                    <strong>Status:</strong>{" "}
+                    {incident.status}
+                </Typography>
+
+                <Typography variant="body2">
+                    <strong>Reports:</strong>{" "}
+                    {incident.report_count}
+                </Typography>
+
+                <Typography variant="body2">
+                    <strong>Time:</strong>{" "}
+                    {new Date(
+                        incident.created_at
+                    ).toLocaleString()}
+                </Typography>
+            </Popup>
+        </Marker>
+    );
+})}
                 </MapContainer>
 
             </CardContent>

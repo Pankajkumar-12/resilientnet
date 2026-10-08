@@ -10,11 +10,14 @@ const resourceRoutes = require("./routes/resourceRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const volunteerRoutes = require("./routes/volunteerRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
-
+const organizationRoutes = require("./routes/organizationRoutes");
+const incidentRoutes = require("./routes/incidentRoutes");
+const logRoutes = require("./routes/logRoutes");
+const activityLogRoutes = require("./routes/activityLogRoutes");
 
 const app = express();
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: true,
     credentials: true
 }));
 
@@ -33,8 +36,10 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/volunteers", volunteerRoutes);
 app.use("/api/analytics", analyticsRoutes);
-
-
+app.use("/api/organizations", organizationRoutes);
+app.use("/api/incidents", incidentRoutes);
+app.use("/api/logs", logRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 app.get("/", (req, res) => {
     res.send("Welcome to ResilientNet Backend API");

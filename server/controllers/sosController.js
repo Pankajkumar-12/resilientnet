@@ -15,7 +15,7 @@ const createSOS = async (req, res) => {
     try {
 
        const result = await pool.query(
-    `INSERT INTO sos_alerts
+    `INSERT INTO sos_reports
     (
         sender_id,
         message,
@@ -91,7 +91,7 @@ const getAllSOS = async (req, res) => {
 
                 u.full_name AS sender_name
 
-            FROM sos_alerts s
+            FROM sos_reports s
 
             JOIN users u
             ON s.sender_id = u.id
@@ -115,7 +115,7 @@ const getDashboardStats = async (req, res) => {
     try {
 
         const activeSOS = await pool.query(
-            "SELECT COUNT(*) FROM sos_alerts WHERE status = 'NEW'"
+            "SELECT COUNT(*) FROM sos_reports WHERE status = 'NEW'"
         );
 
         const volunteers = await pool.query(
@@ -127,7 +127,7 @@ const getDashboardStats = async (req, res) => {
         );
 
         const highPriority = await pool.query(
-            "SELECT COUNT(*) FROM sos_alerts WHERE severity = 'HIGH'"
+            "SELECT COUNT(*) FROM sos_reports WHERE severity = 'HIGH'"
         );
 
         res.json({
