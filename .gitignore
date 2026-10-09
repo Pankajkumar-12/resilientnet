@@ -33,4 +33,6 @@ server/uploads/
 
 # Temporary files
 *.tmp
-*.tempresilientnet_backup.dump 
+*.temp
+*.dump
+resilientnet_backup.dump 

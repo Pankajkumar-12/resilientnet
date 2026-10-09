@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const authenticate = require("../middleware/authMiddleware");
+const { authenticate, authorizeAdmin } = require("../middleware/authMiddleware");
 
 const {
     getAllUsers,
@@ -10,13 +10,13 @@ const {
     updateUserStatus
 } = require("../controllers/userController");
 
-// Get all users
-router.get("/", authenticate, getAllUsers);
+// Get all users (Admin only)
+router.get("/", authenticate, authorizeAdmin, getAllUsers);
 
-// Update user details
-router.put("/:id", authenticate, updateUser);
+// Update user details (Admin only)
+router.put("/:id", authenticate, authorizeAdmin, updateUser);
 
-// Activate / deactivate user
-router.patch("/:id/status", authenticate, updateUserStatus);
+// Activate / deactivate user (Admin only)
+router.patch("/:id/status", authenticate, authorizeAdmin, updateUserStatus);
 
 module.exports = router;

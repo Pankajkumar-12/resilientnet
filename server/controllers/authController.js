@@ -70,11 +70,31 @@ const login = async (req, res) => {
 
         const user = result.rows[0];
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        let isMatch = false;
+        if (
+            user.password_hash &&
+            (user.password_hash.startsWith("$2a$") ||
+             user.password_hash.startsWith("$2b$") ||
+             user.password_hash.startsWith("$2y$"))
+        ) {
+            isMatch = await bcrypt.compare(password, user.password_hash);
+        } else if (user.password_hash === password) {
+            isMatch = true;
+            // Upgrade legacy plain-text hash to bcrypt
+            try {
+                const upgradedHash = await bcrypt.hash(password, 10);
+                await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+                    upgradedHash,
+                    user.id,
+                ]);
+            } catch (hashErr) {
+                console.error("Failed to upgrade legacy password hash:", hashErr.message);
+            }
+        }
 
         if (!isMatch) {
             return res.status(401).json({
-            message: "Invalid Password"
+                message: "Invalid Password"
             });
         }
 

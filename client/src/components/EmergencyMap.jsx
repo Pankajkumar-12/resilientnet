@@ -189,15 +189,27 @@ const EmergencyMap = () => {
 
     const { alerts } = useEmergency();
 
-  useEffect(() => {
-    fetchIncidents();
+    const getSavedSettings = () => {
+        try {
+            const saved = localStorage.getItem("resilientnet_dashboard_settings");
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return null;
+    };
 
-    const interval = setInterval(() => {
+    const dashboardSettings = getSavedSettings();
+    const mapZoom = dashboardSettings?.mapZoom ? parseInt(dashboardSettings.mapZoom, 10) : 11;
+
+    useEffect(() => {
         fetchIncidents();
-    }, 10000);
 
-    return () => clearInterval(interval);
-}, []);
+        const intervalSec = dashboardSettings?.refreshInterval ? parseInt(dashboardSettings.refreshInterval, 10) : 30;
+        const interval = setInterval(() => {
+            fetchIncidents();
+        }, (intervalSec || 30) * 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchIncidents = async () => {
         try {
@@ -362,7 +374,7 @@ const EmergencyMap = () => {
                         mapRef.current = map;
                     }}
                     center={[12.9716, 77.5946]}
-                    zoom={13}
+                    zoom={mapZoom}
                     scrollWheelZoom={true}
                     style={{
                         width: "100%",

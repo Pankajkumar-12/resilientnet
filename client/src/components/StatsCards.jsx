@@ -14,6 +14,21 @@ const StatsCards = () => {
 
     useEffect(() => {
         fetchStats();
+
+        let intervalSec = 30;
+        try {
+            const saved = localStorage.getItem("resilientnet_dashboard_settings");
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.refreshInterval) intervalSec = parseInt(settings.refreshInterval, 10);
+            }
+        } catch (e) {}
+
+        const timer = setInterval(() => {
+            fetchStats();
+        }, (intervalSec || 30) * 1000);
+
+        return () => clearInterval(timer);
     }, []);
 
     const fetchStats = async () => {

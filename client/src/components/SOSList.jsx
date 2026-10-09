@@ -29,25 +29,36 @@ const SOSList = () => {
     const { alerts, setAlerts } = useEmergency();
 
     useEffect(() => {
-    fetchSOS();
+        fetchSOS();
 
-    socket.on("newSOS", (newAlert) => {
+        let intervalSec = 30;
+        try {
+            const saved = localStorage.getItem("resilientnet_dashboard_settings");
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.refreshInterval) intervalSec = parseInt(settings.refreshInterval, 10);
+            }
+        } catch (e) {}
 
-        setAlerts((prevAlerts) => [
-            {
-                ...newAlert,
-                sender_name: "Live Alert"
-            },
-            ...prevAlerts
-        ]);
+        const timer = setInterval(() => {
+            fetchSOS();
+        }, (intervalSec || 30) * 1000);
 
-    });
+        socket.on("newSOS", (newAlert) => {
+            setAlerts((prevAlerts) => [
+                {
+                    ...newAlert,
+                    sender_name: "Live Alert"
+                },
+                ...prevAlerts
+            ]);
+        });
 
-    return () => {
-        socket.off("newSOS");
-    };
-
-}, []);
+        return () => {
+            clearInterval(timer);
+            socket.off("newSOS");
+        };
+    }, []);
 
     const fetchSOS = async () => {
 

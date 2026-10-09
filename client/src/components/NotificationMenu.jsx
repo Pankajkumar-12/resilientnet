@@ -21,16 +21,24 @@ const { notifications, setNotifications } = useEmergency();
     useEffect(() => {
 
     socket.on("newSOS", (data) => {
+        try {
+            const saved = localStorage.getItem("resilientnet_dashboard_settings");
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.notifications === false) {
+                    return; // Notifications disabled in dashboard settings
+                }
+            }
+        } catch (e) {}
 
         setNotifications((prev) => [
-    {
-        id: data.id,
-        title: data.category,
-        message: data.message
-    },
-    ...prev
-]);
-
+            {
+                id: data.id,
+                title: data.category,
+                message: data.message
+            },
+            ...prev
+        ]);
     });
 
     return () => {

@@ -15,6 +15,14 @@ const authenticate = (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         req.user = decoded;
+        if (req.user) {
+            if (req.user.id && !req.user.user_id) {
+                req.user.user_id = req.user.id;
+            }
+            if (req.user.user_id && !req.user.id) {
+                req.user.id = req.user.user_id;
+            }
+        }
 
         next();
     } catch (error) {
@@ -24,4 +32,17 @@ const authenticate = (req, res, next) => {
     }
 };
 
+const authorizeAdmin = (req, res, next) => {
+    if (!req.user || (req.user.role || "").toUpperCase() !== "ADMIN") {
+        return res.status(403).json({
+            message: "Access Denied. Administrator privileges required."
+        });
+    }
+    next();
+};
+
+authenticate.authenticate = authenticate;
+authenticate.authorizeAdmin = authorizeAdmin;
+
 module.exports = authenticate;
+module.exports.authorizeAdmin = authorizeAdmin;

@@ -25,9 +25,26 @@ import SecurityIcon from "@mui/icons-material/Security";
 import SettingsIcon from "@mui/icons-material/Settings";
 import HistoryIcon from "@mui/icons-material/History";
 
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [currentUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   const [activeSection, setActiveSection] = useState("overview");
 
   const [users, setUsers] = useState([]);
@@ -95,16 +112,33 @@ const fetchSystemLogs = async () => {
   };
 
   useEffect(() => {
-    if (activeSection === "users"|| activeSection === "roles") {
+    if (activeSection === "users" || activeSection === "roles") {
       fetchUsers();
     }
     if (activeSection === "logs") {
-        fetchSystemLogs();
+      fetchSystemLogs();
     }
-     if (activeSection === "activity") {
-        fetchActivityLogs();
+    if (activeSection === "activity" || activeSection === "audit") {
+      fetchActivityLogs();
     }
   }, [activeSection]);
+
+  useEffect(() => {
+    const intervalSec = parseInt(dashboardSettings.refreshInterval, 10);
+    if (!intervalSec || isNaN(intervalSec) || intervalSec <= 0) return;
+
+    const timer = setInterval(() => {
+      if (activeSection === "users" || activeSection === "roles") {
+        fetchUsers();
+      } else if (activeSection === "logs") {
+        fetchSystemLogs();
+      } else if (activeSection === "activity" || activeSection === "audit") {
+        fetchActivityLogs();
+      }
+    }, intervalSec * 1000);
+
+    return () => clearInterval(timer);
+  }, [activeSection, dashboardSettings.refreshInterval]);
   
   useEffect(() => {
     const savedSettings = localStorage.getItem(
@@ -246,12 +280,12 @@ const handleResetSettings = () => {
     return matchesSearch && matchesRole;
   });
 
+  const standardRoles = ["ADMIN", "VOLUNTEER", "COORDINATOR", "DISPATCHER"];
   const roles = [
-    ...new Set(
-      users
-        .map((user) => user.role)
-        .filter(Boolean)
-    ),
+    ...new Set([
+      ...standardRoles,
+      ...users.map((user) => user.role).filter(Boolean)
+    ])
   ];
 
   const adminCards = [
@@ -280,19 +314,18 @@ const handleResetSettings = () => {
       action: () => setActiveSection("logs"),
     },
     {
-  title: "Activity Logs",
-  description: "Track user and administrator actions.",
-  icon: <HistoryIcon fontSize="large" />,
-  action: () => setActiveSection("activity"),
-},
-
-{
-    title: "Audit Trail",
-    description: "Track important system actions",
-    icon: <HistoryIcon />,
-    section: "audit",
-    action: () => setActiveSection("audit"),
-},
+      title: "Activity Logs",
+      description: "Track user and administrator actions.",
+      icon: <HistoryIcon fontSize="large" />,
+      action: () => setActiveSection("activity"),
+    },
+    {
+      title: "Audit Trail",
+      description: "Track important system actions.",
+      icon: <HistoryIcon fontSize="large" />,
+      section: "audit",
+      action: () => setActiveSection("audit"),
+    },
   ];
 const fetchActivityLogs = async () => {
     try {
@@ -315,18 +348,57 @@ const fetchActivityLogs = async () => {
 };
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Admin Dashboard
-      </Typography>
-
-      <Typography
-        variant="body1"
-        color="text.secondary"
-        sx={{ mb: 3 }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          mb: 3,
+          flexWrap: "wrap",
+          gap: 2,
+        }}
       >
-        Manage ResilientNet users, roles, system settings and
-        activity records.
-      </Typography>
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            Admin Dashboard
+          </Typography>
+
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ mt: 0.5 }}
+          >
+            Manage ResilientNet users, roles, system settings and activity records.
+          </Typography>
+
+          {currentUser && (
+            <Chip
+              label={`Logged in as: ${currentUser.full_name || currentUser.email} (${currentUser.role || "ADMIN"})`}
+              color="primary"
+              variant="outlined"
+              size="small"
+              sx={{ mt: 1 }}
+            />
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/")}
+          >
+            Emergency Dashboard
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
+        </Box>
+      </Box>
 
       {/* ADMIN CARDS */}
       <Grid container spacing={3}>
