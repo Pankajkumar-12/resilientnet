@@ -13,7 +13,7 @@ const getAllVolunteers = async (req, res) => {
                 u.full_name,
                 u.email,
                 u.phone,
-                u.organization,
+                u.organization_id,
 
                 v.skills,
                 v.availability,
@@ -153,7 +153,7 @@ const getAssignedVolunteers = async (req, res) => {
                 u.full_name,
                 u.email,
                 u.phone,
-                u.organization,
+                u.organization_id,
 
                 v.skills,
                 v.availability,

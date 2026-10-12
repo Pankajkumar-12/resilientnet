@@ -124,12 +124,12 @@ const getAllAnalysis = async (req, res) => {
         const result = await pool.query(`
             SELECT
                 a.*,
-                s.category,
+                COALESCE(a.predicted_category, s.category) AS category,
                 s.severity,
                 s.message
             FROM ai_analysis a
-            JOIN sos_alerts s
-            ON a.sos_id = s.id
+            LEFT JOIN sos_reports s
+            ON (a.sos_id = s.id OR (a.incident_id IS NOT NULL AND a.incident_id = s.incident_id))
             ORDER BY a.analyzed_at DESC
         `);
 

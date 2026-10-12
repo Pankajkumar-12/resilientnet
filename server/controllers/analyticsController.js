@@ -77,14 +77,14 @@ const getDashboardAnalytics = async (req, res) => {
             pool.query(`
                 SELECT COUNT(*) AS count
                 FROM volunteers
-                WHERE availability=true
+                WHERE UPPER(availability) = 'AVAILABLE' OR availability = 'true'
             `),
 
             // Volunteers Busy
             pool.query(`
                 SELECT COUNT(*) AS count
                 FROM volunteers
-                WHERE availability=false
+                WHERE UPPER(availability) != 'AVAILABLE' AND availability != 'true'
             `),
 
             // Category Statistics

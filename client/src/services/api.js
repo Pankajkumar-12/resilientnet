@@ -1,7 +1,17 @@
 import axios from "axios";
 
+const getApiBaseUrl = () => {
+    if (typeof window !== "undefined") {
+        const host = window.location.hostname;
+        if (host && host !== "localhost" && host !== "127.0.0.1") {
+            return `${window.location.protocol}//${host}:5000/api`;
+        }
+    }
+    return import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+};
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: getApiBaseUrl(),
 });
 
 api.interceptors.request.use(

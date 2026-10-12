@@ -89,11 +89,11 @@ const getAllSOS = async (req, res) => {
                 ST_Y(s.location::geometry) AS latitude,
                 ST_X(s.location::geometry) AS longitude,
 
-                u.full_name AS sender_name
+                COALESCE(u.full_name, 'Mobile Gateway (' || SUBSTRING(COALESCE(s.mesh_message_id, 'App'), 1, 8) || ')') AS sender_name
 
             FROM sos_reports s
 
-            JOIN users u
+            LEFT JOIN users u
             ON s.sender_id = u.id
 
             ORDER BY s.created_at DESC

@@ -1,4 +1,3 @@
-import React from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Box, Card, CardContent, Typography, Button, Alert } from "@mui/material";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -14,10 +13,15 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  let user = null;
-  try {
-    user = JSON.parse(userStr);
-  } catch (e) {
+  const user = (() => {
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!user) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     return <Navigate to="/login" state={{ from: location }} replace />;

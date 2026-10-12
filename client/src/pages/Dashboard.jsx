@@ -52,6 +52,7 @@ const Dashboard = () => {
                         container
                         spacing={3}
                         sx={{ mt: 1 }}
+                        id="sos-list-section"
                     >
                         <Grid
                             size={{ xs: 12, md: 8 }}

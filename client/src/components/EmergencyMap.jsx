@@ -18,8 +18,7 @@ import {
     TileLayer,
     Marker,
     Popup,
-    useMap,
-    useMapEvents
+    useMap
 } from "react-leaflet";
 
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -193,7 +192,9 @@ const EmergencyMap = () => {
         try {
             const saved = localStorage.getItem("resilientnet_dashboard_settings");
             if (saved) return JSON.parse(saved);
-        } catch (e) {}
+        } catch {
+            return null;
+        }
         return null;
     };
 
@@ -201,24 +202,29 @@ const EmergencyMap = () => {
     const mapZoom = dashboardSettings?.mapZoom ? parseInt(dashboardSettings.mapZoom, 10) : 11;
 
     useEffect(() => {
-        fetchIncidents();
+        let isMounted = true;
+        const loadIncidents = () => {
+            api.get("/incidents")
+                .then((response) => {
+                    if (isMounted && response?.data) {
+                        setIncidents(response.data);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Failed to fetch incidents:", error);
+                });
+        };
+
+        loadIncidents();
 
         const intervalSec = dashboardSettings?.refreshInterval ? parseInt(dashboardSettings.refreshInterval, 10) : 30;
-        const interval = setInterval(() => {
-            fetchIncidents();
-        }, (intervalSec || 30) * 1000);
+        const interval = setInterval(loadIncidents, (intervalSec || 30) * 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, []);
-
-    const fetchIncidents = async () => {
-        try {
-            const response = await api.get("/incidents");
-            setIncidents(response.data);
-        } catch (error) {
-            console.error("Failed to fetch incidents:", error);
-        }
-    };
     const mapRef = useRef(null);
     return (
         <Card

@@ -7,17 +7,19 @@ const getAllUsers = async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT
-                id,
-                full_name,
-                email,
-                phone,
-                role,
-                status,
-                organization_id,
-                created_at,
-                updated_at
-            FROM users
-            ORDER BY created_at DESC
+                u.id,
+                u.full_name,
+                u.email,
+                u.phone,
+                u.role,
+                u.status,
+                u.organization_id,
+                o.name as organization_name,
+                u.created_at,
+                u.updated_at
+            FROM users u
+            LEFT JOIN organizations o ON u.organization_id = o.id
+            ORDER BY u.created_at DESC
         `);
 
         res.json(result.rows);

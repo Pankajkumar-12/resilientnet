@@ -64,6 +64,7 @@ const createResource = async (req, res) => {
 
         const {
             center_id,
+            organization_id,
             name,
             description,
             category,
@@ -78,7 +79,7 @@ const createResource = async (req, res) => {
             `
             INSERT INTO resources
             (
-                center_id,
+                organization_id,
                 name,
                 description,
                 category,
@@ -95,7 +96,7 @@ const createResource = async (req, res) => {
             RETURNING *
             `,
             [
-                center_id,
+                organization_id || center_id || null,
                 name,
                 description,
                 category,

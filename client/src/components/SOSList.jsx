@@ -4,7 +4,6 @@ import socket from "../services/socket";
 import { useEmergency } from "../context/EmergencyContext";
 
 import {
-    LocationOn,
     Person,
     Warning,
     AccessTime
@@ -28,6 +27,20 @@ const SOSList = () => {
 
     const { alerts, setAlerts } = useEmergency();
 
+    const fetchSOS = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await api.get("/sos", {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            if (Array.isArray(response.data)) {
+                setAlerts(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch SOS:", error);
+        }
+    };
+
     useEffect(() => {
         fetchSOS();
 
@@ -38,7 +51,9 @@ const SOSList = () => {
                 const settings = JSON.parse(saved);
                 if (settings.refreshInterval) intervalSec = parseInt(settings.refreshInterval, 10);
             }
-        } catch (e) {}
+        } catch {
+            // Ignore settings parse error
+        }
 
         const timer = setInterval(() => {
             fetchSOS();
@@ -59,26 +74,6 @@ const SOSList = () => {
             socket.off("newSOS");
         };
     }, []);
-
-    const fetchSOS = async () => {
-
-        try {
-
-            const token = localStorage.getItem("token");
-
-            const response = await api.get("/sos", {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-
-            setAlerts(response.data);
-
-        } catch (error) {
-            console.error(error);
-        }
-
-    };
 
     return (
 

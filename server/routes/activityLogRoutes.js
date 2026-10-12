@@ -8,6 +8,6 @@ const {
     getActivityLogs
 } = require("../controllers/activityLogController");
 
-router.get("/", authenticate, authorizeAdmin, getActivityLogs);
+router.get("/", authenticate, getActivityLogs);
 
 module.exports = router;

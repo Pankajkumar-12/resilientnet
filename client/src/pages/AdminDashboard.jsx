@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -34,7 +34,7 @@ const AdminDashboard = () => {
     try {
       const savedUser = localStorage.getItem("user");
       return savedUser ? JSON.parse(savedUser) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   });
@@ -59,10 +59,21 @@ const [selectedRole, setSelectedRole] = useState("");
 const [updatingRole, setUpdatingRole] = useState(false);
 const [roleMessage, setRoleMessage] = useState("");
 const [roleError, setRoleError] = useState("");
-const [dashboardSettings, setDashboardSettings] = useState({
-    refreshInterval: "30",
-    mapZoom: "11",
-    notifications: true,
+const [dashboardSettings, setDashboardSettings] = useState(() => {
+    try {
+        const savedSettings = localStorage.getItem("resilientnet_dashboard_settings");
+        return savedSettings ? JSON.parse(savedSettings) : {
+            refreshInterval: "30",
+            mapZoom: "11",
+            notifications: true,
+        };
+    } catch {
+        return {
+            refreshInterval: "30",
+            mapZoom: "11",
+            notifications: true,
+        };
+    }
 });
 
 const [settingsMessage, setSettingsMessage] = useState("");
@@ -92,6 +103,7 @@ const fetchSystemLogs = async () => {
         setLoadingLogs(false);
     }
 };
+
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
@@ -108,6 +120,26 @@ const fetchSystemLogs = async () => {
       );
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    try {
+        setLoadingActivityLogs(true);
+        setActivityLogsError("");
+
+        const response = await api.get("/activity-logs");
+
+        setActivityLogs(response.data);
+    } catch (error) {
+        console.error(error);
+
+        setActivityLogsError(
+            error.response?.data?.message ||
+            "Failed to fetch activity logs."
+        );
+    } finally {
+        setLoadingActivityLogs(false);
     }
   };
 
@@ -139,16 +171,6 @@ const fetchSystemLogs = async () => {
 
     return () => clearInterval(timer);
   }, [activeSection, dashboardSettings.refreshInterval]);
-  
-  useEffect(() => {
-    const savedSettings = localStorage.getItem(
-        "resilientnet_dashboard_settings"
-    );
-
-    if (savedSettings) {
-        setDashboardSettings(JSON.parse(savedSettings));
-    }
-}, []);
 
 const handleSettingsChange = (field, value) => {
     setDashboardSettings((prev) => ({
@@ -185,11 +207,13 @@ const handleResetSettings = () => {
     setSettingsMessage("Dashboard settings reset to default.");
 };
 
-  const handleStatusChange = async (user) => {
-    const newStatus =
-      user.status?.toLowerCase() === "active"
-        ? "inactive"
-        : "active";
+  const handleStatusChange = async (user, targetStatus = null) => {
+    let newStatus;
+    if (targetStatus) {
+      newStatus = targetStatus;
+    } else {
+      newStatus = user.status?.toLowerCase() === "active" ? "inactive" : "active";
+    }
 
     try {
       await api.patch(`/users/${user.id}/status`, {
@@ -327,25 +351,7 @@ const handleResetSettings = () => {
       action: () => setActiveSection("audit"),
     },
   ];
-const fetchActivityLogs = async () => {
-    try {
-        setLoadingActivityLogs(true);
-        setActivityLogsError("");
 
-        const response = await api.get("/activity-logs");
-
-        setActivityLogs(response.data);
-    } catch (error) {
-        console.error(error);
-
-        setActivityLogsError(
-            error.response?.data?.message ||
-            "Failed to fetch activity logs."
-        );
-    } finally {
-        setLoadingActivityLogs(false);
-    }
-};
   return (
     <Box sx={{ p: 3 }}>
       <Box
@@ -569,53 +575,90 @@ const fetchActivityLogs = async () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          {user.full_name}
-                        </TableCell>
+                    filteredUsers.map((user) => {
+                      const isPending = user.status?.toLowerCase() === "pending";
+                      const isActive = user.status?.toLowerCase() === "active";
+                      const roleUpper = (user.role || "").toUpperCase();
 
-                        <TableCell>
-                          {user.email}
-                        </TableCell>
+                      return (
+                        <TableRow key={user.id} sx={isPending ? { backgroundColor: "#fffbeb" } : {}}>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="bold">
+                              {user.full_name}
+                            </Typography>
+                            {user.organization_name && (
+                              <Typography variant="caption" color="primary.main" display="block">
+                                {user.organization_name}
+                              </Typography>
+                            )}
+                          </TableCell>
 
-                        <TableCell>
-                          {user.phone || "-"}
-                        </TableCell>
+                          <TableCell>
+                            {user.email}
+                          </TableCell>
 
-                        <TableCell>
-                          {user.role || "-"}
-                        </TableCell>
+                          <TableCell>
+                            {user.phone || "-"}
+                          </TableCell>
 
-                        <TableCell>
-                          <Chip
-                            label={user.status || "Unknown"}
-                            size="small"
-                            color={
-                              user.status?.toLowerCase() ===
-                              "active"
-                                ? "success"
-                                : "default"
-                            }
-                          />
-                        </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={user.role || "-"}
+                              size="small"
+                              sx={{
+                                fontWeight: "bold",
+                                color: roleUpper === "ADMIN" ? "#7c3aed" : roleUpper === "AUTHORITY" ? "#0284c7" : "#16a34a",
+                                backgroundColor: roleUpper === "ADMIN" ? "#f3e8ff" : roleUpper === "AUTHORITY" ? "#e0f2fe" : "#dcfce7",
+                              }}
+                            />
+                          </TableCell>
 
-                        <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() =>
-                              handleStatusChange(user)
-                            }
-                          >
-                            {user.status?.toLowerCase() ===
-                            "active"
-                              ? "Deactivate"
-                              : "Activate"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                          <TableCell>
+                            <Chip
+                              label={isPending ? "Pending Approval" : isActive ? "Active" : "Inactive"}
+                              size="small"
+                              color={isPending ? "warning" : isActive ? "success" : "default"}
+                              sx={{ fontWeight: "bold" }}
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            {isPending ? (
+                              <Box sx={{ display: "flex", gap: 1 }}>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => handleStatusChange(user, "active")}
+                                  sx={{ textTransform: "none", fontWeight: "bold" }}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  onClick={() => handleStatusChange(user, "rejected")}
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  Reject
+                                </Button>
+                              </Box>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color={isActive ? "error" : "primary"}
+                                onClick={() => handleStatusChange(user, isActive ? "inactive" : "active")}
+                                sx={{ textTransform: "none" }}
+                              >
+                                {isActive ? "Deactivate" : "Activate"}
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

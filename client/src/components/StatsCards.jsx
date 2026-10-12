@@ -12,6 +12,20 @@ import { useEmergency } from "../context/EmergencyContext";
 const StatsCards = () => {
     const { stats, setStats } = useEmergency();
 
+    const fetchStats = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await api.get("/sos/stats", {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            if (response.data) {
+                setStats(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch stats:", error);
+        }
+    };
+
     useEffect(() => {
         fetchStats();
 
@@ -22,7 +36,9 @@ const StatsCards = () => {
                 const settings = JSON.parse(saved);
                 if (settings.refreshInterval) intervalSec = parseInt(settings.refreshInterval, 10);
             }
-        } catch (e) {}
+        } catch {
+            // Ignore settings parse error
+        }
 
         const timer = setInterval(() => {
             fetchStats();
@@ -30,23 +46,6 @@ const StatsCards = () => {
 
         return () => clearInterval(timer);
     }, []);
-
-    const fetchStats = async () => {
-        try {
-            const token = localStorage.getItem("token");
-
-            const response = await api.get("/sos/stats", {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-
-            setStats(response.data);
-
-        } catch (error) {
-            console.error(error);
-        }
-    };
 
     const cards = [
     {

@@ -12,7 +12,10 @@ const authenticate = (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || "resilientnet_super_secret_jwt_key_2026"
+        );
 
         req.user = decoded;
         if (req.user) {

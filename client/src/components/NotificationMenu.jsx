@@ -29,7 +29,9 @@ const { notifications, setNotifications } = useEmergency();
                     return; // Notifications disabled in dashboard settings
                 }
             }
-        } catch (e) {}
+        } catch {
+            // Ignore settings parsing error
+        }
 
         setNotifications((prev) => [
             {

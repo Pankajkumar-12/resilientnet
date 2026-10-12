@@ -36,3 +36,4 @@ server/uploads/
 *.temp
 *.dump
 resilientnet_backup.dump 
+scratch/
